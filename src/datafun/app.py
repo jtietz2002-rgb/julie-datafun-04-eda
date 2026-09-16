@@ -1,7 +1,7 @@
 """src/datafun/app.py - Project script (example).
 
-Author: Denise Case
-Date: 2026-08
+Author: Julie Tietz
+Date: 2026-09
 
 RUN:
 

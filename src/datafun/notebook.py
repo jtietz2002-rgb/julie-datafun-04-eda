@@ -87,14 +87,14 @@ So a widget-building cell must depend only on what genuinely determines its opti
 
 import marimo
 
-__generated_with_marimo_version__ = "0.24.0"
+__generated_with = "0.24.2"
 app = marimo.App(width="medium")
-
-# === FIRST CELL IMPORTS AND RETURNS DEPS TO MAKE IT SELF-CONTAINED ===
 
 
 @app.cell
 async def _():
+    # Customized by adding CATEGORICAL_COLUMNS
+
     """Install WASM deps, import everything, and hand it to later cells.
 
     This cell has no arguments: it is the root of the dependency graph.
@@ -105,7 +105,7 @@ async def _():
     matplotlib and marimo are already shipped in the marimo WASM runtime.
     Locally the install is  skipped and the packages come from the .venv.
 
-    Returns DATASET_NAME, NUMERIC_COLUMNS, mo, pd,
+    Returns DATASET_NAME, NUMERIC_COLUMNS, CATEGORICAL_COLUMNS, mo, pd,
     show_numeric_distribution, and show_numeric_relationship.
     """
     import sys
@@ -116,10 +116,12 @@ async def _():
         await micropip.install(["eda_vizkit", "pandas"])
 
     from eda_vizkit import (
+        show_categorical_distribution,
         show_numeric_distribution,
         show_numeric_relationship,
     )
     import marimo as mo
+    import matplotlib.pyplot as plt
     import pandas as pd
 
     DATASET_NAME = "penguins"
@@ -131,18 +133,23 @@ async def _():
         "body_mass_g",
     ]
 
+    CATEGORICAL_COLUMNS = [
+        "species",
+        "island",
+        "sex",
+    ]
     return (
+        CATEGORICAL_COLUMNS,
         DATASET_NAME,
         NUMERIC_COLUMNS,
         mo,
         pd,
+        plt,
+        show_categorical_distribution,
         show_numeric_distribution,
         show_numeric_relationship,
         sys,
     )
-
-
-# === LOAD DATA (ITS OWN CELL, RUNS IN TWO ENVIRONMENTS) ===
 
 
 @app.cell
@@ -173,11 +180,7 @@ def _(DATASET_NAME, mo, pd, sys):
     else:
         data_path = notebook_location.parents[1] / "data" / "raw" / filename
         df = pd.read_csv(data_path)
-
     return (df,)
-
-
-# ===  TYPICALLY START WITH A MARKDOWN TITLE AND OPENING ===
 
 
 @app.cell
@@ -197,11 +200,8 @@ def _(mo):
     return
 
 
-# ===  CONTROL: CHOOSE THE DISTRIBUTION VARIABLE ===
-
-
 @app.cell
-def _choose_first_column(mo, NUMERIC_COLUMNS):
+def _choose_first_column(NUMERIC_COLUMNS, mo):
     """Build the numeric-variable dropdown for the distribution.
 
     Depends on `mo` and its fixed options `NUMERIC_COLUMNS`, and nothing the
@@ -218,11 +218,7 @@ def _choose_first_column(mo, NUMERIC_COLUMNS):
 
     # display
     numeric_column
-
     return (numeric_column,)
-
-
-# ===  RESULT: DISTRIBUTION OF THE CHOSEN VARIABLE ===
 
 
 @app.cell
@@ -242,19 +238,62 @@ def _show_distribution(df, numeric_column, show_numeric_distribution):
 
     # display
     distribution_ax
-
-
-# ===  CONTROL: CHOOSE THE X AND Y VARIABLES ===
+    return
 
 
 @app.cell
-def _choose_second_column(mo, NUMERIC_COLUMNS):
-    """Build the X and Y dropdowns for the relationship scatter.
+def _(CATEGORICAL_COLUMNS, mo):
+    """Build the categorical-variable dropdown for the distribution.
 
-    Depends on `mo` and `NUMERIC_COLUMNS` only, so toggling other controls
+    Depends on `mo` and its fixed options `CATEGORICAL_COLUMNS`, and nothing the
+    user toggles - so this widget-building cell is not rerun by other controls
+    and never resets its selection once made.
+
+    Returns the `categorical_column` widget.
+    """
+    categorical_column = mo.ui.dropdown(
+        options=CATEGORICAL_COLUMNS,
+        value="sex",
+        label="Choose a categorical variable",
+    )
+
+    # display
+    categorical_column
+    return (categorical_column,)
+
+
+@app.cell
+def _(categorical_column, df, show_categorical_distribution):
+    # Customized by adding distribution of categorical column
+
+    """Plot the distribution of the selected categorical column.
+
+    Depends on `categorical_column` (the user's choice) plus `df` and the helper.
+    It consumes a control rather than creating one, so it is meant to rerun
+    whenever the selection changes - that is the reactive update.
+    """
+    distribution_az = show_categorical_distribution(
+        df,
+        column=categorical_column.value,
+    )
+
+    distribution_az.set_title(f"Distribution of {categorical_column.value}")
+
+    # display
+    distribution_az
+    return
+
+
+@app.cell
+def _choose_second_column(CATEGORICAL_COLUMNS, NUMERIC_COLUMNS, mo):
+    # Customized by adding z_column
+
+    """Build the X, Y, and Z dropdowns for the relationship scatter.
+
+    Depends on `mo` and `NUMERIC_COLUMNS` and 'CATEGORICAL_COLUMNS' only, so toggling other controls
     does not rerun this cell or reset the chosen X and Y variables.
 
-    Returns the `x_column` and `y_column` widgets.
+    Returns the `x_column`, `y_column`, and 'z_column' widgets.
     """
     x_column = mo.ui.dropdown(
         options=NUMERIC_COLUMNS,
@@ -268,21 +307,21 @@ def _choose_second_column(mo, NUMERIC_COLUMNS):
         label="Y variable",
     )
 
+    z_column = mo.ui.dropdown(
+        options=CATEGORICAL_COLUMNS,
+        value="sex",
+        label="Group by",
+    )
+
     # hstack = horizontal stack; vstack = vertical stack
     mo.vstack(
         [
             x_column,
             y_column,
+            z_column,
         ]
     )
-
-    return (
-        x_column,
-        y_column,
-    )
-
-
-# ===  RESULT: RELATIONSHIP BETWEEN X AND Y ===
+    return x_column, y_column, z_column
 
 
 @app.cell
@@ -303,16 +342,44 @@ def _show_relationship(df, show_numeric_relationship, x_column, y_column):
 
     # display it
     relationship_ax
-
-
-# ===  TYPICALLY END WITH A MARKDOWN SOURCE LINK AND CLOSING ===
+    return
 
 
 @app.cell
-def _closing(mo, x_column, y_column):
+def _(df, plt, x_column, y_column, z_column):
+    # Customize by grouping by Z
+
+    """Plot the relationship between the selected X and Y columns as a function of Z.
+
+    Depends on `x_column`, `y_column`, and 'z_column' (the user's choices) plus `df` and
+    the helper. Consumes controls rather than creating them, so it reruns and
+    re-renders whenever either selection changes.
+    """
+    fig, ax = plt.subplots()
+
+    for category in df[z_column.value].dropna().unique():
+        group = df[df[z_column.value] == category]
+
+        ax.scatter(
+            group[x_column.value],
+            group[y_column.value],
+            label=category,
+        )
+
+    ax.set_xlabel(x_column.value)
+    ax.set_ylabel(y_column.value)
+    ax.set_title(f"{y_column.value} by {x_column.value}, grouped by {z_column.value}")
+    ax.legend(title=z_column.value)
+
+    fig
+    return
+
+
+@app.cell
+def _closing(mo, x_column, y_column, z_column):
     """Render the closing prompt, echoing the current X and Y choices.
 
-    Depends on `mo` and the current `x_column`/`y_column` values, so the
+    Depends on `mo` and the current `x_column`/`y_column`/'z_column' values, so the
     prompt text updates live as the selections change.
     """
     mo.md(f"""
@@ -322,6 +389,7 @@ def _closing(mo, x_column, y_column):
 
     - **X:** `{x_column.value}`
     - **Y:** `{y_column.value}`
+    - **Z:** '{z_column.value}'
 
     Look at the pattern.
 
@@ -335,6 +403,7 @@ def _closing(mo, x_column, y_column):
 
     What question would you investigate next?
     """)
+    return
 
 
 if __name__ == "__main__":
