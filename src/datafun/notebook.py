@@ -1,7 +1,7 @@
 """src/datafun/notebook.py - Reactive EDA notebook with Marimo.
 
-Author: Denise Case
-Date: 2026-08
+Author: Julie Tietz
+Date: 2026-09
 
 DOMAIN: Penguins
 

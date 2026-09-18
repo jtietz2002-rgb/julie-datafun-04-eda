@@ -62,7 +62,6 @@ from eda_vizkit import (
     show_categorical_distribution,
     show_missing_values,
     show_numeric_distribution,
-    show_numeric_relationship,
 )
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -127,6 +126,7 @@ CATEGORICAL_COLUMNS: Final[list[str]] = [
 
 X_COLUMN: Final[str] = "flipper_length_mm"
 Y_COLUMN: Final[str] = "body_mass_g"
+Z_COLUMN: Final[str] = "sex"  # Optional third variable for grouping
 
 
 # === DEFINE THE MAIN FUNCTION ===
@@ -280,20 +280,43 @@ def main() -> None:
     # to visualize the relationship between two numeric variables.
     # Pass in the df, the x column, the y column.
     # It returns a Matplotlib Axes object representing the plot.
-    relationship_ax = show_numeric_relationship(
-        df,
-        x=X_COLUMN,
-        y=Y_COLUMN,
-    )
+    # relationship_ax = show_numeric_relationship(
+    #    df,
+    #    x=X_COLUMN,
+    #    y=Y_COLUMN,
+    # )
 
     # CUSTOM: Analyst must customize the Matplotlib Axes object with a title and axis labels.
-    relationship_ax.set_title("Penguin Flipper Length vs. Body Mass")
-    relationship_ax.set_xlabel("Flipper Length (mm)")
-    relationship_ax.set_ylabel("Body Mass (g)")
+    # relationship_ax.set_title("Penguin Flipper Length vs. Body Mass")
+    # relationship_ax.set_xlabel("Flipper Length (mm)")
+    # relationship_ax.set_ylabel("Body Mass (g)")
+
+    # save_chart(
+    #    relationship_ax,
+    #    CHART_DIR / "one-relationship.png",
+    # )
+
+    # CUSTOM: Analyst can customize the relationship visualization to include a third variable for grouping.
+
+    _fig, ax = plt.subplots()
+
+    for category in df[Z_COLUMN].dropna().unique():
+        group = df[df[Z_COLUMN] == category]
+
+        ax.scatter(
+            group[X_COLUMN],
+            group[Y_COLUMN],
+            label=category,
+        )
+
+    ax.set_title(f"{Y_COLUMN} vs. {X_COLUMN}, grouped by {Z_COLUMN}")
+    ax.set_xlabel(X_COLUMN)
+    ax.set_ylabel(Y_COLUMN)
+    ax.legend(title=Z_COLUMN)
 
     save_chart(
-        relationship_ax,
-        CHART_DIR / "one-relationship.png",
+        ax,
+        CHART_DIR / "one-relationship-by-group.png",
     )
 
     LOG.info("-------------------------------")
@@ -310,8 +333,8 @@ def main() -> None:
     Some observations (rows) are complete, but some are missing values.
 
     I reviewed the relationship between:
-    Flipper length vs. body mass
-    and it shows a positive relationship.
+    Flipper length vs. body mass as a function of sex.
+    and it shows the same pattern for both sexes.
 
     Based on this EDA, I would next like to review additional
     relationships between other numeric variables.

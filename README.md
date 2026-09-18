@@ -1,5 +1,4 @@
-# datafun-04-eda
-# Customized by Julie Tietz
+# julie-datafun-04-eda
 
 [![Workflow Guide](https://img.shields.io/badge/Pro--Guide-pro--analytics--02-green)](https://denisecase.github.io/pro-analytics-02/workflow-b-apply-example-project/)
 [![Python 3.14](https://img.shields.io/badge/python-3.14%2B-blue?logo=python)](./pyproject.toml)
@@ -221,7 +220,7 @@ Press `Ctrl c` (both keys together) or `Ctrl+Z` then `Enter` on Windows.
 
 ## Documentation
 
-- [Documentation]https://github.com/jtietz2002-rgb/julie-datafun-04-eda
+- [Documentation](https://github.com/jtietz2002-rgb/julie-datafun-04-eda)
 
 ## Data Card
 
