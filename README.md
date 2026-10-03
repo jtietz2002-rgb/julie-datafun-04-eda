@@ -66,7 +66,7 @@ This project produces the same EDA work in several useful forms.
 
 ![One analyst-selected relationship](docs/images/one-relationship.png)
 
-![Bar chart of missing values by variable](docs/images/missing-values.png)
+![One analyst-selected relationship by group](docs/images/one-relationship-by-group.png)
 
 ## Important Folders and Files
 

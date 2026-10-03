@@ -41,4 +41,4 @@ to get a project like this running on your machine.
 
 ![One analyst-selected relationship](./images/one-relationship.png)
 
-![Bar chart of missing values by variable](./images/missing-values.png)
+![One analyst-selected relationship by group](./images/one-relationship-by-group.png)
